@@ -1,0 +1,6 @@
+bin/
+eggs/
+var/
+app/lib/dist/
+.installed.cfg
+*.pyc
