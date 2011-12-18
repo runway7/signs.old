@@ -1,42 +1,48 @@
-
 from google.appengine.ext import webapp
 from webapp2_extras import routes
 import json, logging
+from models import Image, Account
 
 debug = True
 
-class JsonHandler(webapp.RequestHandler):
-    def send(self, data):
-        self.response.out.write(json.dumps(data))
+def walled_request(func):
+    from google.appengine.api import namespace_manager
+    def set_namespaces_first(*args, **kwargs):
+        request = webapp.get_request()
+        client_id = request.headers.get('SIGNS_CLIENT_ID')
+        secret_key = request.headers.get('SIGNS_SECRET_KEY')
+        if not Account.is_authentic(client_id, secret_key): raise Exception('Authentication Failed.')
+        namespace_manager.set_namespace(str(client_id))
+        return func(*args, **kwargs)
+    return set_namespaces_first
+    
+def send(data):
+    response = webapp.get_request().app.response_class()
+    response.out.write(json.dumps(data))
+    return response
 
-class ImagesHandler(JsonHandler):
-    def get(self):
-        self.send([])
+@walled_request
+def list_images(request):
+    image_keys = [image.key.urlsafe() for image in Image.query().fetch()]
+    return send(image_keys)
 
-class UploadHandler(JsonHandler):
-    def post(self):
-        logging.info(len(self.request.get('image')))
-        logging.info(len(self.request.get('test')))
-        self.send([])
-
-class MainHandler(webapp.RequestHandler):
-    def get(self):
-        self.response.out.write('Hello world!')
-
+@walled_request        
+def upload(request):
+    image_key = Image.create(data = request.get('image'))
+    return send(dict(key = image_key.urlsafe()))
 
 def route_with_prefix(prefix, route_defs):
     return routes.PathPrefixRoute(prefix, 
-        [webapp.Route(route[0], route[1]) for route in route_defs]
+        [webapp.Route(route[0], handler = route[1]) for route in route_defs]
     )
 
 API_V1 = route_with_prefix('/api/v1',[
-    ('/images', ImagesHandler),
-    ('/upload', UploadHandler)
+    ('/images', list_images),
+    ('/upload', upload)
 ])
 
 ROUTES = [
-    API_V1,
-    ('/', MainHandler)
+    API_V1
 ]
 
 if debug:

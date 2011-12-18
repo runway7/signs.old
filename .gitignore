@@ -4,3 +4,6 @@ var/
 app/lib/dist/
 .installed.cfg
 *.pyc
+.DS_Store
+tests/tmp/*
+tmp/*
