@@ -20,7 +20,7 @@ class JsonServer(object):
             return json.loads(response.content) if not is_binary else response.content
         return make_call        
         
-    import requests    
+    import requests
     get = send(requests.get)
     post = send(requests.post)    
 

@@ -3,7 +3,7 @@ from models import Account, Image
 from google.appengine.ext.blobstore import BlobReader
 from mockito import *
 
-class ApiTest(unittest.TestCase):
+class ModelTest(unittest.TestCase):
     def setUp(self):
         app_id = 'TEST'
         from google.appengine.ext import testbed
@@ -21,8 +21,8 @@ class ApiTest(unittest.TestCase):
         self.testbed._register_stub('blobstore', blobstore_stub.BlobstoreServiceStub(storage))
         self.testbed._register_stub('file', file_service_stub.FileServiceStub(storage))
 
-class AccountTest(ApiTest):
-    def test_idempotent_secret_key_generation(self):
+class AccountTest(ModelTest):
+    def test_secret_key_generation(self):
         account = Account()
         self.assertIsNone(account.secret_key)
         account.put()
@@ -33,7 +33,7 @@ class AccountTest(ApiTest):
         account.put()
         self.assertEqual(secret_key, account.secret_key)
 
-class ImageTest(ApiTest):
+class ImageTest(ModelTest):
     def test_blob_creation(self):
         import imghdr, StringIO
         data = 'some_image_data'
