@@ -14,8 +14,10 @@ class JsonServer(object):
         import json
         def make_call(self, path, *args, **kwargs):
             url = self.url_join(self._host, path)
+            is_binary = kwargs.pop('binary', False)
             response = method(url, *args, **kwargs)
-            return response.raise_for_status() or json.loads(response.content)
+            response.raise_for_status()
+            return json.loads(response.content) if not is_binary else response.content
         return make_call        
     
     get = _send(requests.get)
@@ -46,7 +48,10 @@ class SignsServer(JsonServer):
         return self.get('/images/')
         
     def upload(self, image_data):
-        self.post('/upload/', {}, files={'image': image_data})
+        return self.post('/upload/', {}, files={'image': image_data})
+    
+    def download(self, image_key):
+        return self.get('/serve/%s/%s' % (self._client_id, str(image_key)), binary = True)
 
 
 class SignsTestServer(JsonServer):
@@ -61,6 +66,12 @@ class ApiTest(unittest.TestCase):
         server = SignsServer(client_id = account['client_id'], 
                             secret_key = account['secret_key'])
         self.assertListEqual([], server.get_images())
-        server.upload(open('api_tests/test2.jpg', 'rb'))
-        self.assertEqual(1, len(server.get_images()))
-    
+        image_file = open('api_tests/test2.jpg', 'rb')
+        image_data = server.upload(image_file)
+        
+        available_images = server.get_images()
+        self.assertEqual(1, len(available_images))
+        
+        image = server.download(image_data['key'])
+        self.assertEqual(len(open('api_tests/test2.jpg', 'rb').read()), len(image))
+        

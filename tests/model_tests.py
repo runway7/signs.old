@@ -1,6 +1,7 @@
-import unittest, logging, os
+import unittest, logging, os, mockito
 from models import Account, Image
 from google.appengine.ext.blobstore import BlobReader
+from mockito import *
 
 class ApiTest(unittest.TestCase):
     def setUp(self):
@@ -34,6 +35,13 @@ class AccountTest(ApiTest):
 
 class ImageTest(ApiTest):
     def test_blob_creation(self):
-        image_key = Image.create(data = 'some_image_data')
+        import imghdr, StringIO
+        data = 'some_image_data'
+        when(StringIO).StringIO(data).thenReturn('data_file')
+        when(imghdr).what('data_file').thenReturn('jpeg')
+        
+        image_key = Image.create(data = data)
         reader = BlobReader(image_key.get().blob_key)
-        self.assertEqual('some_image_data', reader.read())
+        self.assertEqual(data, reader.read())
+        image = image_key.get()
+        self.assertEqual('jpeg', image.format)

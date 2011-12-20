@@ -1,5 +1,15 @@
-from google.appengine.ext.ndb import model
+from google.appengine.ext.ndb import model, key
 from google.appengine.api import files
+
+import StringIO, logging
+as_file = lambda d : StringIO.StringIO(d)
+
+def create_blobstore_file(data):
+    file_name = files.blobstore.create()
+    with files.open(file_name, 'a') as f: f.write(data)
+    files.finalize(file_name)
+    return files.blobstore.get_blob_key(file_name)
+
 
 class Account(model.Model):
     secret_key = model.StringProperty(indexed = False)
@@ -25,12 +35,17 @@ class Account(model.Model):
         
 class Image(model.Model):    
     blob_key = model.BlobKeyProperty()
+    format = model.StringProperty()
     
     @classmethod
+    def get_by_urlsafe(cls, image_key):
+        return key.Key(urlsafe = image_key).get()
+
+    @classmethod
     def create(cls, data = None):
-        image_file_name = files.blobstore.create()
-        with files.open(image_file_name, 'a') as f:
-            f.write(data)
-        files.finalize(image_file_name)
-        image_blob_key = files.blobstore.get_blob_key(image_file_name)
-        return Image(blob_key = image_blob_key).put()
+        import imghdr
+        format = imghdr.what(as_file(data))    
+        image_blob_key = create_blobstore_file(data)
+        return Image(blob_key = image_blob_key, format = format).put()
+        
+        
