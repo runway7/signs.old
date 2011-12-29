@@ -45,3 +45,4 @@ class ImageTest(ModelTest):
         self.assertEqual(data, reader.read())
         image = image_key.get()
         self.assertEqual('jpeg', image.format)
+

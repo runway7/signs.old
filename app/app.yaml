@@ -11,3 +11,8 @@ handlers:
 
 - url: /.*
   script: main.application
+
+builtins:
+- deferred: on
+- datastore_admin: on
+- appstats: on

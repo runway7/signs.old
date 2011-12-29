@@ -1,3 +1,13 @@
+"""
+Signs Python Client. 
+Author: Sudhir Jonathan
+License: MIT
+
+Does not currently work on Google App Engine because of it's dependency on Requests. That should be fixed in future versions. 
+"""
+
+import requests
+import json
 
 class JsonServer(object):
     def __init__(self, host, *args, **kwargs):
@@ -11,7 +21,6 @@ class JsonServer(object):
         return self.url_join(self._host, *args)
         
     def send(method):
-        import json
         def make_call(self, path, *args, **kwargs):
             url = self.host_url(path)
             is_binary = kwargs.pop('binary', False)
@@ -20,11 +29,13 @@ class JsonServer(object):
             return json.loads(response.content) if not is_binary else response.content
         return make_call        
         
-    import requests
     get = send(requests.get)
     post = send(requests.post)    
-
-
+    
+    raw_get = staticmethod(requests.get)
+    raw_post = staticmethod(requests.post)
+    
+    
 class SignsServer(JsonServer):
     def __init__(self, client_id = None, 
                         secret_key = None,
@@ -47,8 +58,15 @@ class SignsServer(JsonServer):
 
     def upload(self, image_data):
         return self.post('/upload/', {}, files={'image': image_data})
+        
+    def _generate_serving_url(self, image_key, size = None):
+        url = '/serve/%s/%s' % (self._client_id, str(image_key))
+        if size: url = '%s?size=%s' % (url, size)
+        return url
     
     def download(self, image_key):
-        url = '/serve/%s/%s' % (self._client_id, str(image_key))
-        return self.get(url, binary = True)
+        return self.get(self._generate_serving_url(image_key), binary = True)
+    
+    def get_serving_url(self, image_key, size = None):
+        return self.host_url(self._generate_serving_url(image_key, size = size))
 

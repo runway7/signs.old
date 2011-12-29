@@ -1,5 +1,5 @@
 from google.appengine.ext.ndb import model, key
-from google.appengine.api import files
+from google.appengine.api import files, images
 import StringIO, imghdr
 
 as_file = lambda data : StringIO.StringIO(data)
@@ -12,6 +12,9 @@ def create_blobstore_file(data):
     return files.blobstore.get_blob_key(file_name)
 
 class Model(model.Model):
+    updated_at = model.DateTimeProperty(auto_now = True)
+    created_at = model.DateTimeProperty(auto_now_add = True)
+    
     @classmethod
     def get_by_urlsafe(cls, urlsafe):
         return key.Key(urlsafe = urlsafe).get()
@@ -48,4 +51,17 @@ class Image(Model):
         format = read_format(as_file(data))    
         image_blob_key = create_blobstore_file(data)
         return Image(blob_key = image_blob_key, format = format).put()        
+
+    def get_serving_url(self, size = None):
+        return images.get_serving_url(self.blob_key, size = int(size))
+
+class Thumbnail(Model):
+    image = model.BlobProperty()
+    
+    @classmethod
+    def load(cls, image_key_str, size):
+        image_key = key.Key(urlsafe = image_key_str)
+        thumbnail_key = key.Key(cls, str(size), parent = image_key)
+        return thumbnail_key.get()
+        
         
