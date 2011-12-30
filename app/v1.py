@@ -1,11 +1,10 @@
 VERSION = 'v1'
 
-from models import Image, Thumbnail
-from utils import *
 from google.appengine.ext import deferred
 from google.appengine.api import urlfetch
 
-import logging
+from models import Image
+from utils import *
 
 class ImageLoader(object):
     @classmethod
@@ -19,7 +18,7 @@ class ImageLoader(object):
     def set_image_format(response, format):
         response.headers['Content-Type'] = str('image/%s' % format)
     
-    @property
+    @cached_property
     def image(self):
         return Image.get_by_urlsafe(self.key)
     
@@ -55,4 +54,4 @@ def download(request, client_id, key):
 ROUTES = [
     ('/upload', upload),
     ('/serve/<client_id>/<key>', download)
-]
+]   
