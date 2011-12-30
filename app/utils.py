@@ -7,6 +7,7 @@ from models import Account
 
 BLOB_KEY_HEADER = blobstore.BLOB_KEY_HEADER
 redirect = webapp.redirect
+cached_property = webapp.cached_property
 
 def get_request():
     return webapp.get_request()
