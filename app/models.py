@@ -55,13 +55,4 @@ class Image(Model):
     def get_serving_url(self, size = None):
         return images.get_serving_url(self.blob_key, size = int(size))
 
-class Thumbnail(Model):
-    image = model.BlobProperty()
-    
-    @classmethod
-    def load(cls, image_key_str, size):
-        image_key = key.Key(urlsafe = image_key_str)
-        thumbnail_key = key.Key(cls, str(size), parent = image_key)
-        return thumbnail_key.get()
-        
         
