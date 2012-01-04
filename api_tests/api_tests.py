@@ -26,13 +26,21 @@ class ApiTest(unittest.TestCase):
         serving_url = self.server.get_serving_url(image_data['key'])        
         self.assertEqual(len(image_file().read()), len(self.server.raw_get(serving_url).content))
     
-    def test_redirect_on_size(self):
+    def test_thumbnail(self):
         image_file = lambda: open('api_tests/test1.jpg', 'rb')
         image_data = self.server.upload(image_file())                
         serving_url = self.server.get_serving_url(image_data['key'], width = 42)
-        response = self.server.raw_get(serving_url, allow_redirects = False)        
+        response = self.server.raw_get(serving_url)        
         self.assertEqual(200, response.status_code)
         self.assertTrue(size(response.content) < size(image_file().read()))        
+
+    def test_format(self):
+        image_file = lambda: open('api_tests/test1.jpg', 'rb')
+        image_data = self.server.upload(image_file())                
+        serving_url = self.server.get_serving_url(image_data['key'], format = 'png', width = 55)
+        response = self.server.raw_get(serving_url)        
+        self.assertEqual('image/png', response.headers['Content-Type'])
+
         
         
 class UrlBuilderTest(unittest.TestCase):

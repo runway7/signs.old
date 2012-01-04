@@ -82,6 +82,10 @@ class SignsServer(JsonServer):
     def download(self, image_key):
         return self.get(self._generate_serving_url(image_key), binary = True)
     
-    def get_serving_url(self, image_key, width = None, height = None, quality = None):
-        return self.host_url(self._generate_serving_url(image_key, width = width, height = height, quality = quality))
+    def get_serving_url(self, image_key, width = None, height = None, quality = None, format = None):
+        return self.host_url(self._generate_serving_url(image_key, 
+                                                        width = width, 
+                                                        height = height, 
+                                                        quality = quality, 
+                                                        format = format))
 

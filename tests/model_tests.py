@@ -26,7 +26,8 @@ class ModelTest(unittest.TestCase):
         self.testbed.init_taskqueue_stub()
         temp_dir = os.path.join(os.getcwd(), 'tmp')
         storage = file_blob_storage.FileBlobStorage(temp_dir, app_id)
-        self.testbed._register_stub('blobstore', blobstore_stub.BlobstoreServiceStub(storage))
+        blob_stub = blobstore_stub.BlobstoreServiceStub(storage)
+        self.testbed._register_stub('blobstore', blob_stub)
         self.testbed._register_stub('file', file_service_stub.FileServiceStub(storage))
     
     def tearDown(self):
@@ -61,33 +62,39 @@ class ThumbnailTest(ModelTest):
     def test_thumbnail_creation(self):        
         data = 'big_image_data'        
         compressed_data = 'cmprsd_data'
-        image = Image.create(data = data)
+        image = Image.create(data=data)
         mock_service_image = mock()
-        when(images).Image(blob_key = image.blob_key).thenReturn(mock_service_image)
+        when(images).Image(blob_key=image.blob_key).thenReturn(mock_service_image)
         when(mock_service_image).execute_transforms().thenReturn(compressed_data)
         thumbnail = Image.thumbnail(image.short_key, Options(dict(width=420)))
-        verify(mock_service_image).resize(width = 420)
+        verify(mock_service_image).resize(width=420)
         self.assertEqual(compressed_data, read_blob(thumbnail.blob_key))
         
 
 class OptionsTest(ModelTest):
     def test_resize(self):        
-        opts = Options(dict(width = 42, height = '35'))                        
-        self.assertEqual(dict(width = 42, height = 35), opts.resize_opts)
-        opts = Options(dict(width = 42))      
-        self.assertEqual(dict(width = 42), opts.resize_opts)  
+        opts = Options(dict(width=42, height='35'))                        
+        self.assertEqual(dict(width=42, height=35), opts.resize_opts)
+        opts = Options(dict(width=42))      
+        self.assertEqual(dict(width=42), opts.resize_opts)  
 
     def test_exec_options(self):
-        opts = Options(dict(height = 34, format = 'png', quality = 90))
-        self.assertEqual(dict(height = 34), opts.resize_opts)                  
-        self.assertEquals(dict(output_encoding = images.PNG, quality = 90), opts.exec_opts)
+        opts = Options(dict(height=34, format='png', quality=90))
+        self.assertEqual(dict(height=34), opts.resize_opts)                  
+        self.assertEquals(dict(output_encoding=images.PNG, quality=90), opts.exec_opts)
 
     def test_relevance(self):
-        opts = Options(dict(lsdkj = 3453, lkjdtlrk= 45645))
+        opts = Options(dict(lsdkj=3453, lkjdtlrk=45645))
         self.assertFalse(opts.are_relevant)
-        opts = Options(dict(width = 43))
+        opts = Options(dict(width=43))
         self.assertTrue(opts.are_relevant)
-
     
-
-
+    def test_key(self):
+        opts = Options(dict(width=42))
+        self.assertEqual('w42', opts.key)
+        opts = Options(dict(width=42, height=654))
+        self.assertEqual('h654|w42', opts.key)
+        opts = Options(dict(width=42, quality=56))
+        self.assertEqual('q56|w42', opts.key)
+        opts = Options(dict(width=42, quality=56, format='jpeg'))
+        self.assertEqual('fJPEG|q56|w42', opts.key)
