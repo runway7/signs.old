@@ -1,9 +1,8 @@
-# A sample Guardfile
-# More info at https://github.com/guard/guard#readme
 
-guard 'shell' do  
+guard 'shell' do
+  nose = `which nosetests`.rstrip  
   watch(/(.*).py/) do |m| 
-    `forklift py test`    
-    `pep8 #{m}`
+    `bin/python #{nose} --with-snort`    
+    `pep8 #{m}`        
   end
 end
