@@ -3,52 +3,44 @@ VERSION = 'v1'
 from google.appengine.ext import deferred
 from google.appengine.api import urlfetch
 
-from models import Image
+from models import Image, Options
 from utils import *
 
 class ImageLoader(object):
     @classmethod
-    def load(cls, key, size):
+    def load(cls, key, options):
         loader = cls()
         loader.key = key
-        loader.size = size
+        loader.options = options
         return loader
-    
-    @staticmethod
-    def set_image_format(response, format):
-        response.headers['Content-Type'] = str('image/%s' % format)
-    
+        
     @cached_property
     def image(self):
-        return Image.get_by_urlsafe(self.key)
+        return Image.get_by_short_key(self.key)
     
-    def send_original(self, response):
-        response.headers[BLOB_KEY_HEADER] = str(self.image.blob_key)
-        self.set_image_format(response, self.image.format)        
+    @cached_property
+    def thumbnail(self):
+        return Image.thumbnail(self.key, self.options)
+    
+    def send_image(self, response, image):
+        response.headers[BLOB_KEY_HEADER] = str(image.blob_key)
+        response.headers['Content-Type'] = str(image.format)
         return response
-    
-    def send_redirect(self, response):
-        serving_url = str(self.image.get_serving_url(size = self.size))
-        return redirect(serving_url, permanent = False)
-        
-    def determine_method(self):
-        if self.size and int(self.size): return self.send_redirect 
-        return self.send_original
-    
+                
     def write_to(self, response):
-        method = self.determine_method()
-        return method(response)
+        image = self.image if not self.options.are_relevant else self.thumbnail
+        return self.send_image(response, image)
 
 @authenticated
 @namespaced
 def upload(request):
-    image_key = Image.create(data = request.get('image'))
-    return send(dict(key = image_key.urlsafe()))
+    image = Image.create(data = request.get('image'))
+    return send(dict(key = image.short_key))
 
 def download(request, client_id, key):
-    set_namespace(client_id)
-    size = request.get('size')
-    loader = ImageLoader.load(key, size)
+    set_namespace(client_id)    
+    options = Options(request)
+    loader = ImageLoader.load(key, options)
     return loader.write_to(make_response())
 
 ROUTES = [
