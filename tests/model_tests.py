@@ -4,6 +4,8 @@ import os
 
 from models import Account, Image, Options
 
+from google.appengine.ext.ndb import key
+
 from google.appengine.api import images
 from google.appengine.ext.blobstore import BlobReader
 from google.appengine.api.files import file_service_stub
@@ -66,9 +68,15 @@ class ThumbnailTest(ModelTest):
         mock_service_image = mock()
         when(images).Image(blob_key=image.blob_key).thenReturn(mock_service_image)
         when(mock_service_image).execute_transforms().thenReturn(compressed_data)
-        thumbnail = Image.thumbnail(image.short_key, Options(dict(width=420)))
+        options = Options(dict(width=420))
+        thumbnail = Image.thumbnail(image.short_key, options)
         verify(mock_service_image).resize(width=420)
         self.assertEqual(compressed_data, read_blob(thumbnail.blob_key))
+        self.assertEqual(thumbnail.key, key.Key(Image, options.key, parent = image.key))
+        original_blob_key = thumbnail.blob_key
+        thumbnail = Image.thumbnail(image.short_key, options)
+        self.assertEqual(original_blob_key, thumbnail.blob_key)
+
         
 
 class OptionsTest(ModelTest):

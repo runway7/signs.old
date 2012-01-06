@@ -49,6 +49,10 @@ class Model(model.Model):
     def short_key(self):
         return self.key.id()
 
+    @classmethod
+    def key_from_short_key(cls, short_key):
+        return key.Key(cls, short_key)
+
 
 class Account(Model):
     secret_key = model.StringProperty(indexed=False)
@@ -77,20 +81,30 @@ class Image(Model):
     format = model.StringProperty()
     
     @classmethod
-    def create(cls, data=None, parent=None):
+    def create(cls, data=None, **kwargs):
         format = 'image/%s' % read_format(as_file(data))    
         image_blob_key = create_blobstore_file(data, mime_type=format)
-        image = Image(blob_key=image_blob_key, format=format) 
+        image = Image(blob_key=image_blob_key, format=format, **kwargs) 
         image.put()
         return image
     
     @classmethod
-    def thumbnail(cls, key, options):        
+    def thumbnail(cls, key, options):  
+        thumbnail_key = cls.make_thumbnail_key(options.key, key)
+        thumbnail = thumbnail_key.get()
+        if thumbnail: return thumbnail
+
         image = Image.get_by_short_key(key)
         service_image = images.Image(blob_key=image.blob_key)
         service_image.resize(**options.resize_opts)
         thumbnail_data = service_image.execute_transforms(**options.exec_opts) 
-        return Image.create(data=thumbnail_data)
+        return Image.create(data=thumbnail_data, key = thumbnail_key)
+    
+    @classmethod
+    def make_thumbnail_key(cls, options_key, image_short_key):
+        image_key = cls.key_from_short_key(image_short_key)
+        return key.Key(Image, options_key, parent = image_key)
+        
 
 
 class Options(object):    
