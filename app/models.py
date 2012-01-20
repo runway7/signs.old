@@ -97,6 +97,7 @@ class Image(Model):
         image = Image.get_by_short_key(key)
         service_image = images.Image(blob_key=image.blob_key)
         service_image.resize(**options.resize_opts)
+        exec_opts = options.exec_opts        
         thumbnail_data = service_image.execute_transforms(**options.exec_opts) 
         return Image.create(data=thumbnail_data, key = thumbnail_key)
     
@@ -130,6 +131,7 @@ class Options(object):
         exec_opts = self.load_if_present([self.option_keys[2]])
         if self.format in ['JPEG', 'PNG', 'WEBP']:
             exec_opts['output_encoding'] = getattr(images, self.format)
+        exec_opts.setdefault('output_encoding', images.JPEG)
         return exec_opts
     
     @property

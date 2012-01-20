@@ -20,16 +20,16 @@ class ApiTest(unittest.TestCase):
     def test_upload_and_serving(self):        
         image_file = lambda: open('api_tests/test2.jpg', 'rb')
         image_data = self.server.upload(image_file())                
-        image = self.server.download(image_data['key'])
+        image = self.server.download(image_data['image_key'])
         self.assertEqual(len(image_file().read()), len(image))
         
-        serving_url = self.server.get_serving_url(image_data['key'])        
+        serving_url = self.server.get_serving_url(image_data['image_key'])        
         self.assertEqual(len(image_file().read()), len(self.server.raw_get(serving_url).content))
     
     def test_thumbnail(self):
         image_file = lambda: open('api_tests/test1.jpg', 'rb')
         image_data = self.server.upload(image_file())                
-        serving_url = self.server.get_serving_url(image_data['key'], width = 42)
+        serving_url = self.server.get_serving_url(image_data['image_key'], width = 42)
         response = self.server.raw_get(serving_url)        
         self.assertEqual(200, response.status_code)
         self.assertTrue(size(response.content) < size(image_file().read()))        
@@ -37,7 +37,7 @@ class ApiTest(unittest.TestCase):
     def test_format(self):
         image_file = lambda: open('api_tests/test1.jpg', 'rb')
         image_data = self.server.upload(image_file())                
-        serving_url = self.server.get_serving_url(image_data['key'], format = 'png', width = 55)
+        serving_url = self.server.get_serving_url(image_data['image_key'], format = 'png', width = 55)
         response = self.server.raw_get(serving_url)        
         self.assertEqual('image/png', response.headers['Content-Type'])
 

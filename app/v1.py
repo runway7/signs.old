@@ -35,7 +35,7 @@ class ImageLoader(object):
 @namespaced
 def upload(request):
     image = Image.create(data = request.get('image'))
-    return send(dict(key = image.short_key))
+    return send(dict(image_key = image.short_key))
 
 def download(request, client_id, key):
     set_namespace(client_id)    
